@@ -1,0 +1,108 @@
+﻿@page "/movies"
+@using Microsoft.AspNetCore.Components.QuickGrid
+@inject MovieRankingBlazor.Data.ApplicationDbContext DB
+@using MovieRankingBlazor.Components
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+
+<PageTitle>Movie Ranking List</PageTitle>
+
+<h1>Movie Ranking List</h1>
+
+
+<div class="row">
+    <div class="col-md-12">
+
+        <p>
+            <a href="movies/create" class="btn btn-success">Create New Movie</a>
+        </p>
+
+        <p>
+            <input type="search" @oninput="SearchMovie" placeholder="Search Movie Title..." class="form-control" />
+        </p>
+
+        <QuickGrid Items="@MovieQueryable">
+
+            <PropertyColumn Property="@(m => m.Title)" Sortable="true" Class="movie-title" Align="Align.Right" />
+            <PropertyColumn Property="movie => movie.ReleaseDate" Format="yyyy-MM-dd" Sortable="true" Align="Align.Right" />
+            <PropertyColumn Property="movie => movie.Rate" Format="F2" Sortable="true" Align="Align.Right" />
+
+
+            <TemplateColumn Context="movie">
+                <div class="btn-group float-right">
+                    <AuthorizeView>
+                        <Authorized>
+                            <button class="btn btn-primary" @onclick="() =>EditMovie(movie.Id)">Edit</button>
+                            <button class="btn btn-danger" @onclick="() => DeleteMovie(movie.Id)">Delete</button>
+                        </Authorized>
+                    </AuthorizeView>
+                    <button class="btn btn-info" @onclick="() => ViewDetails(movie.Id)">Details</button>
+                </div>
+            </TemplateColumn>
+        </QuickGrid>
+
+    </div>
+</div>
+
+
+@code {
+    IQueryable<Movie> MovieQueryable = Enumerable.Empty<Movie>().AsQueryable();
+
+    [SupplyParameterFromForm]
+    Movie movie { get; set; } = new();
+    DateOnly SelectedDate;
+    static List<Movie> MoviesList = new();
+
+    protected override void OnInitialized()
+    {
+        ConvertListToQueryable();
+
+    }
+
+    private void ConvertListToQueryable()
+    {
+        MoviesList = DB.Movie.ToList();
+        if (MoviesList is null) return;
+        foreach (var movie in MoviesList.OrderBy(_ => _.Id))
+        {
+            MovieQueryable = MovieQueryable.Concat(new[] { movie }.AsQueryable());
+        }
+    }
+    void GetDataAgain()
+    {
+        MovieQueryable = Enumerable.Empty<Movie>().AsQueryable();
+        ConvertListToQueryable();
+    }
+    void SearchMovie(ChangeEventArgs e)
+    {
+        string searchValue = e.Value?.ToString()?.Trim() ?? "";
+        if (!string.IsNullOrEmpty(searchValue))
+        {
+            var result = MoviesList.Where(c => c.Title!.Contains(searchValue, StringComparison.CurrentCultureIgnoreCase)).ToList();
+            MovieQueryable = result.AsQueryable();
+        }
+        else
+        {
+            GetDataAgain();
+        }
+    }
+
+    // Movie editing method
+    private void EditMovie(int movieId)
+    {
+        NavigationManager.NavigateTo($"movies/edit?id={movieId}");
+    }
+
+    // Movie deletion method
+    private void DeleteMovie(int movieId)
+    {
+        NavigationManager.NavigateTo($"movies/delete?id={movieId}");
+    }
+
+    // Method to display movie details
+    private void ViewDetails(int movieId)
+    {
+        NavigationManager.NavigateTo($"movies/details?id={movieId}");
+    }
+}

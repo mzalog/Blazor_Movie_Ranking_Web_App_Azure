@@ -1,0 +1,78 @@
+﻿@page "/movies/create"
+@inject MovieRankingBlazor.Data.ApplicationDbContext DB
+@using Microsoft.AspNetCore.Authorization
+@using MovieRankingBlazor.Components
+@inject NavigationManager NavigationManager
+@attribute [Authorize]
+
+<PageTitle>Create Movie</PageTitle>
+
+<h1>Create Movie</h1>
+
+<h4>Movie</h4>
+<hr />
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <EditForm method="post" Model="Movie" OnValidSubmit="AddMovie" FormName="create" Enhance>
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="text-danger" />
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Title:</label>
+                        <InputText id="title" @bind-Value="Movie.Title" class="form-control" />
+                        <ValidationMessage For="() => Movie.Title" class="text-danger" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description:</label>
+                        <InputText id="description" @bind-Value="Movie.Description" class="form-control" />
+                        <ValidationMessage For="() => Movie.Description" class="text-danger" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="releasedate" class="form-label">ReleaseDate:</label>
+                        <InputDate id="releasedate" @bind-Value="Movie.ReleaseDate" class="form-control" />
+                        <ValidationMessage For="() => Movie.ReleaseDate" class="text-danger" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="rate" class="form-label">Rate:</label>
+                        <InputNumber id="rate" @bind-Value="Movie.Rate" class="form-control" min="1" max="10" step="0.5" />
+                        <ValidationMessage For="() => Movie.Rate" class="text-danger" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="imageurl" class="form-label">Image URL:</label>
+                        <InputText id="imageurl" @bind-Value="Movie.ImageUrl" class="form-control" />
+                        <ValidationMessage For="() => Movie.ImageUrl" class="text-danger" />
+                    </div>
+                    <button type="submit" class="btn btn-primary">Create</button>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-3">
+    <a href="/movies" class="btn btn-secondary">Back to List</a>
+</div>
+
+@code {
+    [SupplyParameterFromForm]
+    public Movie Movie { get; set; } = new();
+
+    // To protect from overposting attacks, see https://aka.ms/RazorPagesCRUD
+    public async Task AddMovie()
+    {
+        if (Movie.Rate.HasValue && Movie.Rate.Value > 0)
+        {
+            Movie.NumberOfReviews = 1;
+        }
+        else
+        {
+            Movie.Rate = null;
+            Movie.NumberOfReviews = 0;
+        }
+
+        DB.Movie.Add(Movie);
+        await DB.SaveChangesAsync();
+        NavigationManager.NavigateTo("/movies");
+    }
+}
